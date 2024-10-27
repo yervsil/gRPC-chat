@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package chat;
+
+option go_package = "github.com/yervsil/grpc-chat";
+
+service ChatService {
+  rpc Chat(stream Message) returns (stream Message);
+}
+
+message Message {
+  string content = 1;
+  string sender = 2;
+}

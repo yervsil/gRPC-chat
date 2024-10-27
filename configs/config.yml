@@ -1,0 +1,14 @@
+env: local
+httpServer:
+  port: :8000
+  writeTimeout: 10s
+  readTimeout: 10s
+postgres:
+  host: localhost
+  port: "5432"
+  username: postgres
+  dbname: postgres
+  ssl_mode: disable
+kafka:
+  brokers: "127.0.0.1:9095,127.0.0.1:9096,127.0.0.1:9097"
+  topic: "testTopic"
