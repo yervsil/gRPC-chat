@@ -22,7 +22,6 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChatServiceClient interface {
-	// Двусторонний поток сообщений
 	Chat(ctx context.Context, opts ...grpc.CallOption) (ChatService_ChatClient, error)
 }
 
@@ -44,8 +43,8 @@ func (c *chatServiceClient) Chat(ctx context.Context, opts ...grpc.CallOption) (
 }
 
 type ChatService_ChatClient interface {
-	Send(*Message) error
-	Recv() (*Message, error)
+	Send(*MessageRequest) error
+	Recv() (*MessageResponse, error)
 	grpc.ClientStream
 }
 
@@ -53,12 +52,12 @@ type chatServiceChatClient struct {
 	grpc.ClientStream
 }
 
-func (x *chatServiceChatClient) Send(m *Message) error {
+func (x *chatServiceChatClient) Send(m *MessageRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *chatServiceChatClient) Recv() (*Message, error) {
-	m := new(Message)
+func (x *chatServiceChatClient) Recv() (*MessageResponse, error) {
+	m := new(MessageResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -69,7 +68,6 @@ func (x *chatServiceChatClient) Recv() (*Message, error) {
 // All implementations must embed UnimplementedChatServiceServer
 // for forward compatibility
 type ChatServiceServer interface {
-	// Двусторонний поток сообщений
 	Chat(ChatService_ChatServer) error
 	mustEmbedUnimplementedChatServiceServer()
 }
@@ -99,8 +97,8 @@ func _ChatService_Chat_Handler(srv interface{}, stream grpc.ServerStream) error 
 }
 
 type ChatService_ChatServer interface {
-	Send(*Message) error
-	Recv() (*Message, error)
+	Send(*MessageResponse) error
+	Recv() (*MessageRequest, error)
 	grpc.ServerStream
 }
 
@@ -108,12 +106,12 @@ type chatServiceChatServer struct {
 	grpc.ServerStream
 }
 
-func (x *chatServiceChatServer) Send(m *Message) error {
+func (x *chatServiceChatServer) Send(m *MessageResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *chatServiceChatServer) Recv() (*Message, error) {
-	m := new(Message)
+func (x *chatServiceChatServer) Recv() (*MessageRequest, error) {
+	m := new(MessageRequest)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}

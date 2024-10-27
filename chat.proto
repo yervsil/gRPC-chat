@@ -5,10 +5,14 @@ package chat;
 option go_package = "github.com/yervsil/grpc-chat";
 
 service ChatService {
-  rpc Chat(stream Message) returns (stream Message);
+  rpc Chat(stream MessageRequest) returns (stream MessageResponse);
 }
 
-message Message {
+message MessageRequest {
   string content = 1;
-  string sender = 2;
+}
+
+message MessageResponse {
+  string content = 1;
+  string from_name = 2;
 }

@@ -65,24 +65,23 @@ func(c *ChatAPI) Chat(stream pb.ChatService_ChatServer) error {
 
 func(c *ChatAPI) readMessage(chatUser *models.ChatUser) error{
 		defer func() {
-			close(chatUser.Message)
 			c.Unregister <- chatUser
+			close(chatUser.Message)
 		}()
 
 		for {
         msg, err := chatUser.MessageStream.Recv()
-		fmt.Println(c.rooms)
+
         if err == io.EOF {
-			log.Printf("Received error message from %s: %s, %s", msg.Sender, msg.Content, err.Error())
             return nil
         }
         if err != nil {
-			log.Printf("Received error message from %s: %s, %s", msg.Sender, msg.Content, err.Error())
+			log.Printf("Received error message from %s: %s, %s", chatUser.Name, msg.Content, err.Error())
             return err
         }
-        log.Printf("Received message from %s: %s", msg.Sender, msg.Content)
+        log.Printf("Received message from %s: %s", chatUser.Name, msg.Content)
 
-		message := &models.Message{Content: msg.Content, FromName: msg.Sender, FromUUID: chatUser.ID, RoomName: chatUser.RoomName}
+		message := &models.Message{Content: msg.Content, FromName: chatUser.Name, FromUUID: chatUser.ID, RoomName: chatUser.RoomName}
 
 		c.Transmit <- message
 
@@ -97,7 +96,7 @@ func(c *ChatAPI) writeMessage(chatUser *models.ChatUser) error{
 		return errors.New("connection was closed")
 	} 
 
-	message := &pb.Message{Content: msg.Content, Sender: msg.FromName}
+	message := &pb.MessageResponse{Content: msg.Content, FromName: msg.FromName}
 
 	err := chatUser.MessageStream.Send(message)
 	if err != nil {
@@ -105,8 +104,7 @@ func(c *ChatAPI) writeMessage(chatUser *models.ChatUser) error{
 		return err
 	}
 
-	log.Printf("message Sended from %s to %s", msg.FromName, chatUser.Name)
-
+	log.Printf("message Sended to %s from %s", chatUser.Name, msg.FromName)
 
 }
 }
@@ -114,10 +112,8 @@ func(c *ChatAPI) writeMessage(chatUser *models.ChatUser) error{
 
 func(c *ChatAPI) Kernel(ctx context.Context) {
 	for {
-		fmt.Println("0")
 		select {
 		case user := <-c.Register:		
-		fmt.Println("1")
 			room, ok := c.rooms[user.RoomName]
 			if !ok {
 				var m map[string]*models.ChatUser = map[string]*models.ChatUser{user.Name: user}
@@ -126,40 +122,32 @@ func(c *ChatAPI) Kernel(ctx context.Context) {
 						Name: user.RoomName,
 						users: m,					
 				}
-				fmt.Println("in register", c.rooms)
 				continue
 			}
 
 			cUser, ok := room.users[user.Name]
 			if !ok {
 				room.users[user.Name] = user	
-				fmt.Println("in register", c.rooms)
 				continue
 			}
-			fmt.Println("in register", c.rooms)
 			cUser.MessageStream = user.MessageStream
 			
 		case u := <-c.Unregister:
 			room, ok := c.rooms[u.RoomName]
 			if ok {		
 				delete(room.users, u.Name)
-
 				if len(room.users) == 0 {
 					delete(c.rooms, u.RoomName)
 				}
 			}
 		case msg := <-c.Transmit:
-			fmt.Println("2")
 			room := c.rooms[msg.RoomName]
-			fmt.Println("in transmit start", room.users)
 			for name, user := range room.users {
 				if msg.FromName != name {
 					user.Message <- msg
 				}
 			}
-			fmt.Println("in transmit end", room.users)
 		case <- ctx.Done():
-			fmt.Println("99")
 			return
 		}
 	}
